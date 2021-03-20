@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         1p3a_script
 // @namespace    https://github.com/eagleoflqj/p1a3_script
-// @version      0.8.11
+// @version      0.8.8
 // @description  方便使用一亩三分地
 // @author       Liumeo
 // @match        https://www.1point3acres.com/bbs/*
@@ -21,7 +21,6 @@
 
 (function () {
     'use strict';
-
     const jq = jQuery.noConflict();
     const waitUntilElementLoaded = function (element, retryTimes = 20) { // 异步等待元素出现并返回
         return new Promise((resolve, reject) => {
@@ -43,12 +42,10 @@
     // 可隐藏的模块
     const hideData = [
         { value: '#toptb', text: "开通VIP" },
+        { value: '#scbar', text: "搜索栏" },
         { value: '.mn > div.fl.bm:nth-child(1)', text: "小喇叭" },
-        { value: '#portal_block_76 > div', text: "水车排行" },
+        { value: '#portal_block_76', text: "水车排行" },
         { value: '#frameLXyXrm', text: "4x3" },
-        { value: '#portal_block_421_content', text: "指尖新闻" },
-        { value: '#portal_block_422_content', text: "交友用户" },
-        { value: '#portal_block_424_content', text: "Learn" },
     ];
     const hideList = hideData.map(e => e.value); // 可隐藏的模块选择器列表
     const hide = () => hideList.forEach(selector => jq(selector).css('display', getValue('hide', selector) ? 'none' : 'block')); // 按本地存储隐藏模块
@@ -74,14 +71,17 @@
     GM_addStyle(GM_getResourceText('dreamui')); // 加载DreamUI样式
     GM_addStyle('.ui-checkbox {margin-right:20px; margin-top:20px}'); // CSS优先级问题
     hide();
-    // 针对不同页面的操作
+    setInterval(function () {
+        document.body.style.cssText = "visible !important";
+    }, 100); // 添加防止屏蔽
     const url = window.location.href;
+    const contents = jq('#ct').width('100%'); // 重置内容的宽度
     if (url.search(/https:\/\/www\.1point3acres\.com\/bbs\/((forum|thread|tag|plugin.php\?id=dsu_paulsign:sign).*)?$/) == 0) { // 可签到、答题的页面
         // 自动签到
-        const sign = jq('div.flex > a:contains("签到领奖")')[0];
+        const sign = jq('.text-sm a:contains("签到领奖")')[0];
         sign && sign.click(); // 点击签到领奖
         // 签到后自动答题
-        const dayquestion = jq('#ahome_question_icon').parent()[0] || jq('a > img[src="source/plugin/ahome_dayquestion/images/ing.gif"]').parent()[0];
+        const dayquestion = jq('img[src*=ahome_dayquestion]').parent()[0];
         !sign && dayquestion && dayquestion.onclick && (dayquestion.click() || 1) &&
             (async () => {
                 const fwin_pop = await waitUntilElementLoaded('#fwin_pop form');
@@ -114,13 +114,13 @@
                 console.log(question + '\n答案为：' + answer);
             })(); // 保证答题对话框加载
         // 新特性通知，不干扰签到、答题
-        !sign && !(dayquestion && dayquestion.onclick) && (() => {
+        !sign && dayquestion && !dayquestion.onclick && (() => {
             const currentVersion = GM_info.script.version;
             // 每个版本只通知一次
             getValue('global', 'lastVersion') !== currentVersion && (setValue('global', 'lastVersion', currentVersion) || 1) &&
                 UI.notice.success({
                     title: currentVersion + '更新提示',
-                    content: '新增隐藏模块指尖新闻、交友用户、Learn',
+                    content: '适应20200617新签到页面',
                     autoClose: 8000
                 });
         })();
@@ -173,3 +173,4 @@
         img && img.src.search('collapsed_no') > 0 && img.onclick();
     }
 })();
+
